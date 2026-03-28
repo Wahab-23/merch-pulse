@@ -22,9 +22,11 @@ model User {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
-  roleId    Int? // 🔗 link to Role table
-  role      Role?    @relation(fields: [roleId], references: [id])
-  records   Record[]
+  roleId           Int? // 🔗 link to Role table
+  role             Role?      @relation(fields: [roleId], references: [id])
+  records          Record[]
+  sentMessages     Message[]  @relation("SentMessages")
+  receivedMessages Message[]  @relation("ReceivedMessages")
 }
 
 model Role {
@@ -57,4 +59,20 @@ model Record {
   @@unique([userId, date])
   @@index([userId])
   @@index([date])
+}
+
+model Message {
+  id          Int      @id @default(autoincrement())
+  content     String?  // Can be null if it's just a file
+  fileUrl     String?  // The cloud url if a file is attached
+  fileName    String?  // e.g. "report.pdf"
+  fileSize    Int?     // Stored in bytes to validate sizes
+  senderId    Int
+  receiverId  Int
+  createdAt   DateTime @default(now())
+  
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  @@index([senderId, receiverId])
 }

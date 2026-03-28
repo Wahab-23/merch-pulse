@@ -156,6 +156,17 @@ exports.Prisma.RecordScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.MessageScalarFieldEnum = {
+  id: 'id',
+  content: 'content',
+  fileUrl: 'fileUrl',
+  fileName: 'fileName',
+  fileSize: 'fileSize',
+  senderId: 'senderId',
+  receiverId: 'receiverId',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -175,7 +186,8 @@ exports.Prisma.NullsOrder = {
 exports.Prisma.ModelName = {
   User: 'User',
   Role: 'Role',
-  Record: 'Record'
+  Record: 'Record',
+  Message: 'Message'
 };
 
 /**

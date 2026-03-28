@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useEffect, useState } from "react"
-import { ChevronRight, LogOut, Settings, Users, Home, BarChart } from "lucide-react"
+import { ChevronRight, LogOut, Settings, Users, Home, BarChart, MessageSquare } from "lucide-react"
 import { useRouter } from "next/navigation"
 import {
   Collapsible,
@@ -59,6 +59,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: <Home className="h-4 w-4" />,
       items: [
         { title: "Overview", url: "/" },
+      ],
+    },
+    {
+      title: "Communication",
+      icon: <MessageSquare className="h-4 w-4" />,
+      items: [
+        { title: "Messages", url: "/messages" },
       ],
     },
     {
