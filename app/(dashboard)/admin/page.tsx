@@ -1,35 +1,66 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import prisma from "@/lib/prisma";
+import { getUserFromToken } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Users, TrendingUp } from "lucide-react";
 
-export default function AdminOverviewPage() {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+function countBusinessDays(start: Date, end: Date) {
+  let count = 0;
+  const cur = new Date(start);
+  while (cur <= end) {
+    const day = cur.getDay();
+    if (day !== 0 && day !== 7) count++;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+}
 
-  const fetchOverview = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("/api/admin/overview", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+export default async function AdminOverviewPage() {
+  // 1. Authenticate user via cookies
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value || "";
+  const user = await getUserFromToken(token);
 
-      const json = await res.json();
-      setData(json);
-    } catch (err) {
-      console.error("Error fetching admin overview:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (!user || user.role?.name !== "Admin") {
+    redirect("/login");
+  }
 
-  useEffect(() => {
-    fetchOverview();
-  }, []);
+  // 2. Fetch data directly from the database (SSR)
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0); // last day of month
+  const workingDaysInMonth = countBusinessDays(monthStart, monthEnd);
 
-  if (loading) return <div className="p-10 text-center">Loading overview...</div>;
+  const merchandisers = await prisma.user.findMany({
+    where: { role: { name: "Merchandiser" } },
+    select: { id: true, name: true, email: true },
+  });
+
+  const records = await prisma.record.findMany({
+    where: { date: { gte: monthStart, lte: monthEnd } },
+  });
+
+  // 3. Process the data
+  const merchandiserData = merchandisers.map((m: any) => {
+    const userRecords = records.filter((r: any) => r.userId === m.id);
+    const totalUploads = userRecords.reduce((sum, r) => sum + r.equivalentUploads, 0);
+
+    const defaultDailyTarget = 50;
+    const dailyTarget = defaultDailyTarget;
+    const monthlyTarget = dailyTarget * workingDaysInMonth;
+
+    const percentage = monthlyTarget > 0 ? Math.round((totalUploads / monthlyTarget) * 100) : 0;
+
+    return {
+      id: m.id,
+      name: m.name,
+      monthlyUploads: Math.round(totalUploads),
+      monthlyTarget,
+      achievedPercentage: percentage,
+    };
+  });
 
   return (
     <div className="p-6 space-y-8">
@@ -39,12 +70,12 @@ export default function AdminOverviewPage() {
       </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {data?.merchandisers?.map((m: any) => (
+        {merchandiserData.map((m: any) => (
           <Card key={m.id} className="shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Users className="h-5 w-5 text-sky-600" />
-                {m.name}
+                {m.name || 'Unnamed User'}
               </CardTitle>
             </CardHeader>
 

@@ -5,55 +5,56 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
-  output = "../app/generated/"
+  provider      = "prisma-client-js"
+  output        = "../app/generated/"
   binaryTargets = ["native", "darwin", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
 }
 
 model User {
-  id         Int       @id @default(autoincrement())
-  name       String?
-  email      String     @unique
-  password   String
-  isActive   Boolean    @default(true)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @default(now()) @updatedAt
-  roleId     Int?       // 🔗 link to Role table
-  role       Role?      @relation(fields: [roleId], references: [id])
-  records    Record[]
+  id        Int      @id @default(autoincrement())
+  name      String?
+  email     String   @unique
+  password  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  roleId    Int? // 🔗 link to Role table
+  role      Role?    @relation(fields: [roleId], references: [id])
+  records   Record[]
 }
 
 model Role {
-  id         Int        @id @default(autoincrement())
-  name       String     @unique
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @default(now()) @updatedAt
-  users      User[]     //
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  users     User[] //
 }
 
 // Merchandising / KPI record model
 model Record {
-  id                 Int      @id @default(autoincrement())
-  userId             Int
-  date               DateTime @default(now()) @unique         // day of the record (store midnight or use date portion)
-  productUploads     Int      @default(0)
-  reOptimizations    Int      @default(0)             // Product Re-Optimize
-  priceUpdates       Int      @default(0)
-  priceComparisons   Int      @default(0)             // Price Compare
-  stockUpdates       Int      @default(0)
-  csvUpdates         Int      @default(0)             // count of CSV updates (each = 100 products)
-  equivalentUploads  Float    @default(0)             // calculated total equivalent uploads
-  target             Int      @default(50)            // daily target (default 50)
+  id                Int      @id @default(autoincrement())
+  userId            Int
+  date              DateTime @default(now()) // day of the record (store midnight or use date portion)
+  productUploads    Int      @default(0)
+  reOptimizations   Int      @default(0) // Product Re-Optimize
+  priceUpdates      Int      @default(0)
+  priceComparisons  Int      @default(0) // Price Compare
+  stockUpdates      Int      @default(0)
+  csvUpdates        Int      @default(0) // count of CSV updates (each = 100 products)
+  equivalentUploads Float    @default(0) // calculated total equivalent uploads
+  target            Int      @default(50) // daily target (default 50)
   comments          String?
   attachmentUrl     String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @default(now()) @updatedAt
-  user               User     @relation(fields: [userId], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
+  user              User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
   @@index([userId])
   @@index([date])
 }

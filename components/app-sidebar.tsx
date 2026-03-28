@@ -109,12 +109,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar {...props}>
       <SidebarHeader>
-        <Image 
-          src={Logo} 
-          width={"180"} 
-          height={50} 
+        <Image
+          src={Logo}
+          width={180}
+          height={50}
           alt="logo"
-          className="mx-auto mb-2 mt-2"
+          className="mx-auto mb-2 mt-2 w-auto h-auto"
+          loading="eager"
         />
       </SidebarHeader>
       <SidebarContent className="gap-0">
