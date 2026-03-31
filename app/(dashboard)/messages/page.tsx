@@ -27,7 +27,7 @@ export default async function MessagesPage() {
   });
 
   return (
-    <div className="p-6 h-[calc(100vh-6rem)] flex flex-col">
+    <div className="h-[calc(100vh-6rem)] flex flex-col">
       {/*       <div className="mb-6 flex items-center gap-3">
         <MessageSquare className="h-8 w-8 text-blue-600" />
         <div className="flex flex-col">

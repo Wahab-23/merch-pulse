@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { pusherClient } from "@/lib/pusher";
-import { Send, Paperclip, Loader2, FileIcon, Smile, BellRing } from "lucide-react";
+import { Send, Paperclip, Loader2, FileIcon, Smile, BellRing, TrendingUp, User, Globe, MessageCircle } from "lucide-react";
 import { Button } from "./ui/button";
-import EmojiPicker from "emoji-picker-react";
+import EmojiPicker, { Theme } from "emoji-picker-react";
 
 export function ChatInterface({ users, currentUserId }: { users: any[], currentUserId: number }) {
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
@@ -15,11 +15,10 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
   const [isUploading, setIsUploading] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState<Record<number, number>>({});
-  
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const selectedUserRef = useRef(selectedUser);
 
-  // Keep ref up to date for inside pusher closure
   useEffect(() => {
     selectedUserRef.current = selectedUser;
   }, [selectedUser]);
@@ -28,7 +27,6 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Request browser notification permissions on load
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
       if (Notification.permission === "default") {
@@ -37,15 +35,12 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
     }
   }, []);
 
-  // Set up Pusher WebSocket listener globally for the current user
   useEffect(() => {
     const channelName = `chat-${currentUserId}`;
     const channel = pusherClient.subscribe(channelName);
 
     channel.bind("new-message", (newMsg: any) => {
       const activePartner = selectedUserRef.current;
-
-      // 1. If we are currently actively chatting with the sender
       if (activePartner && (newMsg.senderId === activePartner.id || newMsg.senderId === currentUserId)) {
         setMessages((prev) => {
           if (!prev.find((m) => m.id === newMsg.id)) {
@@ -55,20 +50,17 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
         });
       }
 
-      // 2. If it is an incoming message from SOMEONE ELSE (not what we are looking at)
       if (newMsg.senderId !== currentUserId && (!activePartner || newMsg.senderId !== activePartner.id)) {
-        // Increment their unread badge
         setUnreadCounts((prev) => ({
           ...prev,
           [newMsg.senderId]: (prev[newMsg.senderId] || 0) + 1
         }));
 
-        // Fire a browser notification
         if ("Notification" in window && Notification.permission === "granted") {
           const senderName = users.find(u => u.id === newMsg.senderId)?.name || "Someone";
           new Notification(`New message from ${senderName}`, {
             body: newMsg.content || "Sent you a file attachment",
-            icon: "/favicon.ico" // change to your app's icon if needed
+            icon: "/favicon.ico"
           });
         }
       }
@@ -79,12 +71,9 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
     };
   }, [currentUserId, users]);
 
-  // Fetch full chat history when selecting a user
   useEffect(() => {
     if (!selectedUser) return;
     setLoading(true);
-    
-    // Clear their unread badge if we just clicked on them
     setUnreadCounts((prev) => ({ ...prev, [selectedUser.id]: 0 }));
 
     const fetchHistory = async () => {
@@ -110,14 +99,12 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
     if (!selectedUser || loading || isUploading) return;
     if (!inputVal.trim() && !file) return;
 
-    setShowEmoji(false); // Cleanly close emoji picker
+    setShowEmoji(false);
     let finalFileUrl = "";
     let finalFileName = "";
     let finalFileSize = 0;
-
     const storedToken = localStorage.getItem("token");
 
-    // 1. Upload File if attached
     if (file) {
       if (file.size > 20 * 1024 * 1024) {
         alert("File must be 20mb or less!");
@@ -134,9 +121,7 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
           body: fd,
         });
         const upData = await upRes.json();
-        
         if (!upRes.ok) throw new Error(upData.error);
-        
         finalFileUrl = upData.url;
         finalFileName = upData.fileName;
         finalFileSize = upData.fileSize;
@@ -148,7 +133,6 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
       setIsUploading(false);
     }
 
-    // 2. Send Message
     setLoading(true);
     try {
       const res = await fetch("/api/messages", {
@@ -184,34 +168,52 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
   };
 
   return (
-    <div className="flex h-[80vh] border rounded-lg overflow-hidden bg-white shadow-sm">
+    <div className="flex h-full bg-white overflow-hidden">
+      {/* Background Subtle Glows */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-500/[0.02] rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-yellow-500/[0.02] rounded-full blur-[100px] pointer-events-none" />
+
       {/* Sidebar List */}
-      <div className="w-1/3 border-r bg-gray-50 flex flex-col">
-        <div className="p-4 font-bold border-b bg-white flex justify-between items-center text-gray-800">
-          <span>Users</span>
+      <div className="w-80 border-r border-slate-100 bg-slate-50/10 backdrop-blur-xl flex flex-col z-10">
+        <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white/50">
+          <div className="flex items-center gap-3">
+            <div className="h-2 w-2 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.2)] animate-pulse" />
+            <span className="text-sm font-black tracking-[0.2em] uppercase text-slate-800">Operatives</span>
+          </div>
           {Object.values(unreadCounts).some(i => i > 0) && (
-            <BellRing className="h-4 w-4 text-blue-500 animate-pulse" />
+            <div className="h-2 w-2 rounded-full bg-yellow-500 animate-ping" />
           )}
         </div>
-        <div className="flex-1 overflow-y-auto">
+
+        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-1 custom-scrollbar">
           {users.map(u => {
             const hasUnread = unreadCounts[u.id] > 0;
+            const isSelected = selectedUser?.id === u.id;
             return (
-              <div 
-                key={u.id} 
+              <div
+                key={u.id}
                 onClick={() => setSelectedUser(u)}
-                className={`p-4 border-b cursor-pointer transition-colors flex items-center justify-between ${selectedUser?.id === u.id ? "bg-blue-100 border-blue-200" : "hover:bg-gray-100"}`}
+                className={`group relative p-4 rounded-2xl cursor-pointer transition-all duration-300 flex items-center gap-4 ${isSelected ? "bg-white shadow-sm ring-1 ring-slate-200" : "hover:bg-slate-400/[0.02]"}`}
               >
-                <div>
-                  <div className={`text-gray-800 ${hasUnread ? "font-bold" : "font-semibold"}`}>{u.name}</div>
-                  <div className="text-xs text-gray-500">{u.role?.name || "Member"}</div>
+                <div className={`h-12 w-12 rounded-full flex items-center justify-center text-sm font-black transition-all border ${isSelected ? "bg-yellow-500 text-black border-yellow-400 shadow-lg shadow-yellow-500/10 scale-105" : "bg-white text-slate-400 border-slate-100"}`}>
+                  {u.name[0]}
                 </div>
-                
-                {/* Unread Badge UI */}
-                {hasUnread && (
-                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm animate-bounce">
-                    {unreadCounts[u.id]}
-                  </span>
+
+                <div className="flex-1 min-w-0">
+                  <div className={`text-sm tracking-tight truncate ${isSelected || hasUnread ? "text-slate-900 font-bold" : "text-slate-600 font-medium"}`}>
+                    {u.name}
+                  </div>
+                  <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mt-0.5">
+                    {u.role?.name || "Member"}
+                  </div>
+                </div>
+
+                {hasUnread && !isSelected && (
+                  <div className="h-2 w-2 rounded-full bg-yellow-500" />
+                )}
+
+                {isSelected && (
+                  <div className="absolute left-0 w-1 h-6 bg-yellow-500 rounded-r-full shadow-[0_0_10px_rgba(234,179,8,0.2)]" />
                 )}
               </div>
             );
@@ -220,108 +222,128 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col bg-white relative">
+      <div className="flex-1 flex flex-col bg-white/50 relative z-10 overflow-hidden">
         {!selectedUser ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-2">
-            <Smile className="h-10 w-10 text-gray-300" />
-            <p>Select a user to start chatting</p>
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-300 gap-4 animate-in fade-in duration-500">
+            <div className="h-20 w-20 rounded-[2rem] bg-slate-50 flex items-center justify-center border border-slate-100">
+              <MessageCircle className="h-10 w-10 opacity-20" />
+            </div>
+            <p className="text-xs font-bold tracking-[0.3em] uppercase">Secure Channel Offline</p>
           </div>
         ) : (
           <>
-            <div className="p-4 border-b font-bold bg-white text-gray-800 shadow-sm z-10">
-              {selectedUser.name}
+            <div className="h-24 px-8 flex items-center justify-between border-b border-slate-100 bg-white/90 backdrop-blur-md">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-full bg-yellow-500 flex items-center justify-center text-black font-black shadow-lg shadow-yellow-500/10">
+                  {selectedUser.name[0]}
+                </div>
+                <div>
+                  <h3 className="text-slate-900 font-black tracking-tight leading-none mb-1">{selectedUser.name}</h3>
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Link</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 relative">
+            <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar scroll-smooth bg-slate-50/[0.3]">
               {loading && messages.length === 0 ? (
-                <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="animate-spin text-gray-400" /></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="h-10 w-10 border-2 border-yellow-500/10 border-t-yellow-500 rounded-full animate-spin" />
+                </div>
               ) : (
                 messages.map(msg => (
-                  <div key={msg.id} className={`flex ${msg.senderId === currentUserId ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[70%] p-3 shadow-sm ${msg.senderId === currentUserId ? "bg-blue-600 text-white rounded-2xl rounded-br-sm" : "bg-white border text-gray-800 rounded-2xl rounded-bl-sm"}`}>
-                      {msg.content && <p className="mb-1 text-sm whitespace-pre-wrap">{msg.content}</p>}
-                      
-                      {/* File UI */}
+                  <div key={msg.id} className={`flex flex-col ${msg.senderId === currentUserId ? "items-end" : "items-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+                    <div className={`group relative max-w-[75%] p-4 shadow-xl shadow-slate-200/[0.15] transition-all ${msg.senderId === currentUserId
+                      ? "bg-yellow-400 text-black rounded-2xl rounded-tr-none"
+                      : "bg-white border border-slate-100 text-slate-800 rounded-2xl rounded-tl-none"
+                      }`}>
+                      {msg.content && <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">{msg.content}</p>}
+
                       {msg.fileUrl && (
-                        <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center p-2 mt-2 rounded-lg transition-colors ${msg.senderId === currentUserId ? "bg-blue-700 hover:bg-blue-800 text-blue-50 border border-blue-500" : "bg-gray-100 hover:bg-gray-200 border text-gray-700"}`}>
-                          <FileIcon className="h-4 w-4 mr-2 flex-shrink-0" />
-                          <span className="text-xs truncate font-medium">{msg.fileName}</span>
+                        <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center p-3 mt-3 rounded-xl transition-all border ${msg.senderId === currentUserId
+                          ? "bg-white/5 border-white/5 hover:bg-white/10 text-white"
+                          : "bg-slate-50 border-slate-100 hover:bg-slate-100 text-slate-800"
+                          }`}>
+                          <FileIcon className="h-4 w-4 mr-3 text-yellow-500" />
+                          <span className="text-xs truncate font-bold tracking-tight">{msg.fileName}</span>
                         </a>
                       )}
-                      
-                      <span className={`text-[10px] mt-1 block select-none ${msg.senderId === currentUserId ? "text-blue-200" : "text-gray-400"}`}>
+
+                      <div className={`text-[9px] mt-2 font-black uppercase tracking-widest opacity-30 ${msg.senderId === currentUserId ? "text-right" : "text-left"}`}>
                         {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                      </div>
                     </div>
                   </div>
                 ))
               )}
-              <div ref={bottomRef} className="h-2" />
+              <div ref={bottomRef} className="h-4" />
             </div>
 
             {/* Input Form */}
-            <div className="p-4 border-t bg-white flex flex-col gap-2 relative z-20">
-              
-              {/* Emojis Popup Overlay */}
+            <div className="p-8 relative bg-white border-t border-slate-100">
+
               {showEmoji && (
-                <div className="absolute bottom-[80px] left-4 shadow-xl rounded-lg overflow-hidden border">
-                  <EmojiPicker onEmojiClick={handleEmojiClick} lazyLoadEmojis={true} />
+                <div className="absolute bottom-[110px] left-8 overflow-hidden z-50 animate-in zoom-in-95 duration-200">
+                  <EmojiPicker theme={Theme.LIGHT} onEmojiClick={handleEmojiClick} lazyLoadEmojis={true} />
                 </div>
               )}
 
-              {/* Attached file preview tag */}
               {file && (
-                <div className="bg-blue-50 text-blue-800 p-2 text-xs border border-blue-200 rounded-lg flex items-center justify-between shadow-sm animate-in slide-in-from-bottom-2">
-                  <div className="flex items-center gap-2 overflow-hidden">
-                    <FileIcon className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate max-w-[200px] font-medium">{file.name}</span>
+                <div className="absolute bottom-[110px] left-8 right-8 bg-white border border-yellow-500 p-3 rounded-2xl flex items-center justify-between shadow-2xl animate-in slide-in-from-bottom-4 transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+                      <FileIcon className="h-4 w-4 text-yellow-500" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-800 truncate max-w-[300px]">{file.name}</span>
                   </div>
-                  <button onClick={() => setFile(null)} className="text-red-500 font-bold hover:bg-red-50 px-2 rounded ml-4 transition-colors">
-                    Remove
+                  <button onClick={() => setFile(null)} className="text-red-500 text-[10px] font-black uppercase tracking-widest hover:text-red-700 transition-colors px-4">
+                    Delete
                   </button>
                 </div>
               )}
-              
-              <div className="flex items-center gap-2">
-                {/* Emoji Trigger */}
-                <button 
-                  onClick={() => setShowEmoji(!showEmoji)} 
-                  className={`p-2 hover:bg-gray-100 rounded-full transition-colors relative ${showEmoji ? 'bg-gray-200 text-blue-600' : 'text-gray-500'}`}
-                  disabled={loading || isUploading}
-                >
-                  <Smile className="h-5 w-5" />
-                </button>
 
-                {/* File Attachment Trigger */}
-                <label className="cursor-pointer p-2 hover:bg-gray-100 rounded-full transition-colors relative text-gray-500">
-                  <Paperclip className="h-5 w-5" />
-                  <input 
-                    type="file" 
-                    className="hidden" 
-                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+              <div className="relative group/input">
+                <div className="absolute inset-y-0 left-0 pl-6 flex items-center gap-2">
+                  <button
+                    onClick={() => setShowEmoji(!showEmoji)}
+                    className={`p-2 rounded-xl transition-all ${showEmoji ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/20' : 'text-slate-300 hover:text-slate-600 hover:bg-slate-50'}`}
                     disabled={loading || isUploading}
-                  />
-                </label>
-                
+                  >
+                    <Smile className="h-5 w-5" />
+                  </button>
+                  <label className="cursor-pointer p-2 rounded-xl transition-all text-slate-300 hover:text-slate-600 hover:bg-slate-50">
+                    <Paperclip className="h-5 w-5" />
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={(e) => setFile(e.target.files?.[0] || null)}
+                      disabled={loading || isUploading}
+                    />
+                  </label>
+                </div>
+
                 <input
                   type="text"
-                  placeholder="Type your message..."
-                  className="flex-1 border-0 focus:ring-0 text-sm bg-gray-100 p-3 px-4 rounded-full outline-none transition-all focus:bg-gray-50 focus:shadow-inner"
+                  placeholder="Transmit message..."
+                  className="w-full bg-slate-50 border border-slate-100 py-5 pl-32 pr-24 rounded-full text-sm font-semibold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-yellow-500/10 focus:border-yellow-500/30 focus:bg-white transition-all shadow-inner"
                   value={inputVal}
                   onChange={(e) => setInputVal(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSend()}
                   disabled={loading || isUploading}
                 />
-                
-                <Button 
-                  size="icon"
-                  onClick={handleSend} 
-                  className="rounded-full shadow-sm flex-shrink-0 transition-transform hover:scale-105"
-                  disabled={loading || isUploading || (!inputVal.trim() && !file)}
-                >
-                  {isUploading ? <Loader2 className="animate-spin" /> : <Send className="ml-0.5" />}
-                </Button>
+
+                <div className="absolute inset-y-0 right-2 flex items-center px-2">
+                  <Button
+                    onClick={handleSend}
+                    className="h-10 w-10 !p-0 rounded-full bg-yellow-500 text-black shadow-lg shadow-yellow-500/20 hover:bg-yellow-400 active:scale-95 transition-all"
+                    disabled={loading || isUploading || (!inputVal.trim() && !file)}
+                  >
+                    {isUploading || loading ? <Loader2 className="h-4 w-4 animate-spin text-black" /> : <Send className="h-4 w-4 ml-0.5 text-black" />}
+                  </Button>
+                </div>
               </div>
             </div>
           </>

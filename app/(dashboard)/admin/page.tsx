@@ -65,7 +65,7 @@ export default async function AdminOverviewPage() {
   return (
     <div className="p-6 space-y-8">
       <h1 className="text-3xl font-bold flex items-center gap-2">
-        <TrendingUp className="h-7 w-7 text-blue-600" />
+        <TrendingUp className="h-7 w-7 text-yellow-600" />
         Merchandiser Performance Overview
       </h1>
 
@@ -74,7 +74,7 @@ export default async function AdminOverviewPage() {
           <Card key={m.id} className="shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Users className="h-5 w-5 text-sky-600" />
+                <Users className="h-5 w-5 text-yellow-600" />
                 {m.name || 'Unnamed User'}
               </CardTitle>
             </CardHeader>

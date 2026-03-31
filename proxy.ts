@@ -9,20 +9,11 @@ export async function proxy(req: NextRequest) {
 
   const { pathname } = req.nextUrl;
 
-
-  if (!token && pathname !== "/login") {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
-
-  if (token && pathname === "/login") {
-    return NextResponse.redirect(new URL("/", req.url));
-  }
-  
-  if (user?.role?.name === "Admin" && pathname === "/") {
+  if (user?.role?.name === "Admin" && pathname === "/login") {
     return NextResponse.redirect(new URL("/admin", req.url));
   }
-  
-  if (user?.role?.name === "Merchandiser" && pathname === "/") {
+
+  if (user?.role?.name === "Merchandiser" && pathname === "/login") {
     return NextResponse.redirect(new URL("/merchandiser", req.url));
   }
 

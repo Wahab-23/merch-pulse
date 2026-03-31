@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "iShopping KPI App",
-  description: "Created for iShopping internal use",
+  title: "MerchPulse — Internal KPI Tracker",
+  description: "Real-time performance metrics and team insights for E-commerce Operations.",
 };
 
 export default function RootLayout({
