@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,26 @@ export default function EditUserModal({ user, onClose, onUpdated }: any) {
     role: user.role?.name,
     isActive: user.isActive,
   });
+  const [roles, setRoles] = useState<any[]>([]);
 
   const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    async function fetchRoles() {
+      try {
+        const res = await fetch("/api/roles", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setRoles(data);
+        }
+      } catch (err) {
+        console.error("Error fetching roles:", err);
+      }
+    }
+    fetchRoles();
+  }, [token]);
 
   async function updateUser() {
     try {
@@ -32,7 +50,7 @@ export default function EditUserModal({ user, onClose, onUpdated }: any) {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error);
+        toast.error(data.error || "Update failed");
         return;
       }
 
@@ -71,19 +89,24 @@ export default function EditUserModal({ user, onClose, onUpdated }: any) {
             onChange={(e) => setForm({ ...form, password: e.target.value })}
           />
 
-          <Select
-            value={form.role}
-            onValueChange={(v) => setForm({ ...form, role: v })}
-          >
-            <SelectTrigger>
-              <span>{form.role}</span>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Admin">Admin</SelectItem>
-              <SelectItem value="Merchandiser">Merchandiser</SelectItem>
-              <SelectItem value="CSV">CSV</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">User Role</label>
+            <Select
+              value={form.role}
+              onValueChange={(v) => setForm({ ...form, role: v })}
+            >
+              <SelectTrigger className="w-full">
+                <span>{form.role || "Select Role"}</span>
+              </SelectTrigger>
+              <SelectContent>
+                {roles.map((r) => (
+                  <SelectItem key={r.id} value={r.name}>
+                    {r.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <Button onClick={updateUser} className="w-full">
             Update User

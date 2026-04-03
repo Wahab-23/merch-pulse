@@ -4856,6 +4856,7 @@ export namespace Prisma {
     fileSize: number | null
     senderId: number | null
     receiverId: number | null
+    isRead: boolean | null
     createdAt: Date | null
   }
 
@@ -4867,6 +4868,7 @@ export namespace Prisma {
     fileSize: number | null
     senderId: number | null
     receiverId: number | null
+    isRead: boolean | null
     createdAt: Date | null
   }
 
@@ -4878,6 +4880,7 @@ export namespace Prisma {
     fileSize: number
     senderId: number
     receiverId: number
+    isRead: number
     createdAt: number
     _all: number
   }
@@ -4905,6 +4908,7 @@ export namespace Prisma {
     fileSize?: true
     senderId?: true
     receiverId?: true
+    isRead?: true
     createdAt?: true
   }
 
@@ -4916,6 +4920,7 @@ export namespace Prisma {
     fileSize?: true
     senderId?: true
     receiverId?: true
+    isRead?: true
     createdAt?: true
   }
 
@@ -4927,6 +4932,7 @@ export namespace Prisma {
     fileSize?: true
     senderId?: true
     receiverId?: true
+    isRead?: true
     createdAt?: true
     _all?: true
   }
@@ -5025,6 +5031,7 @@ export namespace Prisma {
     fileSize: number | null
     senderId: number
     receiverId: number
+    isRead: boolean
     createdAt: Date
     _count: MessageCountAggregateOutputType | null
     _avg: MessageAvgAggregateOutputType | null
@@ -5055,6 +5062,7 @@ export namespace Prisma {
     fileSize?: boolean
     senderId?: boolean
     receiverId?: boolean
+    isRead?: boolean
     createdAt?: boolean
     sender?: boolean | UserDefaultArgs<ExtArgs>
     receiver?: boolean | UserDefaultArgs<ExtArgs>
@@ -5068,6 +5076,7 @@ export namespace Prisma {
     fileSize?: boolean
     senderId?: boolean
     receiverId?: boolean
+    isRead?: boolean
     createdAt?: boolean
     sender?: boolean | UserDefaultArgs<ExtArgs>
     receiver?: boolean | UserDefaultArgs<ExtArgs>
@@ -5081,6 +5090,7 @@ export namespace Prisma {
     fileSize?: boolean
     senderId?: boolean
     receiverId?: boolean
+    isRead?: boolean
     createdAt?: boolean
     sender?: boolean | UserDefaultArgs<ExtArgs>
     receiver?: boolean | UserDefaultArgs<ExtArgs>
@@ -5094,10 +5104,11 @@ export namespace Prisma {
     fileSize?: boolean
     senderId?: boolean
     receiverId?: boolean
+    isRead?: boolean
     createdAt?: boolean
   }
 
-  export type MessageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "content" | "fileUrl" | "fileName" | "fileSize" | "senderId" | "receiverId" | "createdAt", ExtArgs["result"]["message"]>
+  export type MessageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "content" | "fileUrl" | "fileName" | "fileSize" | "senderId" | "receiverId" | "isRead" | "createdAt", ExtArgs["result"]["message"]>
   export type MessageInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     sender?: boolean | UserDefaultArgs<ExtArgs>
     receiver?: boolean | UserDefaultArgs<ExtArgs>
@@ -5125,6 +5136,7 @@ export namespace Prisma {
       fileSize: number | null
       senderId: number
       receiverId: number
+      isRead: boolean
       createdAt: Date
     }, ExtArgs["result"]["message"]>
     composites: {}
@@ -5558,6 +5570,7 @@ export namespace Prisma {
     readonly fileSize: FieldRef<"Message", 'Int'>
     readonly senderId: FieldRef<"Message", 'Int'>
     readonly receiverId: FieldRef<"Message", 'Int'>
+    readonly isRead: FieldRef<"Message", 'Boolean'>
     readonly createdAt: FieldRef<"Message", 'DateTime'>
   }
     
@@ -6045,6 +6058,7 @@ export namespace Prisma {
     fileSize: 'fileSize',
     senderId: 'senderId',
     receiverId: 'receiverId',
+    isRead: 'isRead',
     createdAt: 'createdAt'
   };
 
@@ -6398,6 +6412,7 @@ export namespace Prisma {
     fileSize?: IntNullableFilter<"Message"> | number | null
     senderId?: IntFilter<"Message"> | number
     receiverId?: IntFilter<"Message"> | number
+    isRead?: BoolFilter<"Message"> | boolean
     createdAt?: DateTimeFilter<"Message"> | Date | string
     sender?: XOR<UserScalarRelationFilter, UserWhereInput>
     receiver?: XOR<UserScalarRelationFilter, UserWhereInput>
@@ -6411,6 +6426,7 @@ export namespace Prisma {
     fileSize?: SortOrderInput | SortOrder
     senderId?: SortOrder
     receiverId?: SortOrder
+    isRead?: SortOrder
     createdAt?: SortOrder
     sender?: UserOrderByWithRelationInput
     receiver?: UserOrderByWithRelationInput
@@ -6427,6 +6443,7 @@ export namespace Prisma {
     fileSize?: IntNullableFilter<"Message"> | number | null
     senderId?: IntFilter<"Message"> | number
     receiverId?: IntFilter<"Message"> | number
+    isRead?: BoolFilter<"Message"> | boolean
     createdAt?: DateTimeFilter<"Message"> | Date | string
     sender?: XOR<UserScalarRelationFilter, UserWhereInput>
     receiver?: XOR<UserScalarRelationFilter, UserWhereInput>
@@ -6440,6 +6457,7 @@ export namespace Prisma {
     fileSize?: SortOrderInput | SortOrder
     senderId?: SortOrder
     receiverId?: SortOrder
+    isRead?: SortOrder
     createdAt?: SortOrder
     _count?: MessageCountOrderByAggregateInput
     _avg?: MessageAvgOrderByAggregateInput
@@ -6459,6 +6477,7 @@ export namespace Prisma {
     fileSize?: IntNullableWithAggregatesFilter<"Message"> | number | null
     senderId?: IntWithAggregatesFilter<"Message"> | number
     receiverId?: IntWithAggregatesFilter<"Message"> | number
+    isRead?: BoolWithAggregatesFilter<"Message"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"Message"> | Date | string
   }
 
@@ -6724,6 +6743,7 @@ export namespace Prisma {
     fileUrl?: string | null
     fileName?: string | null
     fileSize?: number | null
+    isRead?: boolean
     createdAt?: Date | string
     sender: UserCreateNestedOneWithoutSentMessagesInput
     receiver: UserCreateNestedOneWithoutReceivedMessagesInput
@@ -6737,6 +6757,7 @@ export namespace Prisma {
     fileSize?: number | null
     senderId: number
     receiverId: number
+    isRead?: boolean
     createdAt?: Date | string
   }
 
@@ -6745,6 +6766,7 @@ export namespace Prisma {
     fileUrl?: NullableStringFieldUpdateOperationsInput | string | null
     fileName?: NullableStringFieldUpdateOperationsInput | string | null
     fileSize?: NullableIntFieldUpdateOperationsInput | number | null
+    isRead?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     sender?: UserUpdateOneRequiredWithoutSentMessagesNestedInput
     receiver?: UserUpdateOneRequiredWithoutReceivedMessagesNestedInput
@@ -6758,6 +6780,7 @@ export namespace Prisma {
     fileSize?: NullableIntFieldUpdateOperationsInput | number | null
     senderId?: IntFieldUpdateOperationsInput | number
     receiverId?: IntFieldUpdateOperationsInput | number
+    isRead?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -6769,6 +6792,7 @@ export namespace Prisma {
     fileSize?: number | null
     senderId: number
     receiverId: number
+    isRead?: boolean
     createdAt?: Date | string
   }
 
@@ -6777,6 +6801,7 @@ export namespace Prisma {
     fileUrl?: NullableStringFieldUpdateOperationsInput | string | null
     fileName?: NullableStringFieldUpdateOperationsInput | string | null
     fileSize?: NullableIntFieldUpdateOperationsInput | number | null
+    isRead?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -6788,6 +6813,7 @@ export namespace Prisma {
     fileSize?: NullableIntFieldUpdateOperationsInput | number | null
     senderId?: IntFieldUpdateOperationsInput | number
     receiverId?: IntFieldUpdateOperationsInput | number
+    isRead?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -7186,6 +7212,7 @@ export namespace Prisma {
     fileSize?: SortOrder
     senderId?: SortOrder
     receiverId?: SortOrder
+    isRead?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -7204,6 +7231,7 @@ export namespace Prisma {
     fileSize?: SortOrder
     senderId?: SortOrder
     receiverId?: SortOrder
+    isRead?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -7215,6 +7243,7 @@ export namespace Prisma {
     fileSize?: SortOrder
     senderId?: SortOrder
     receiverId?: SortOrder
+    isRead?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -7749,6 +7778,7 @@ export namespace Prisma {
     fileUrl?: string | null
     fileName?: string | null
     fileSize?: number | null
+    isRead?: boolean
     createdAt?: Date | string
     receiver: UserCreateNestedOneWithoutReceivedMessagesInput
   }
@@ -7760,6 +7790,7 @@ export namespace Prisma {
     fileName?: string | null
     fileSize?: number | null
     receiverId: number
+    isRead?: boolean
     createdAt?: Date | string
   }
 
@@ -7778,6 +7809,7 @@ export namespace Prisma {
     fileUrl?: string | null
     fileName?: string | null
     fileSize?: number | null
+    isRead?: boolean
     createdAt?: Date | string
     sender: UserCreateNestedOneWithoutSentMessagesInput
   }
@@ -7789,6 +7821,7 @@ export namespace Prisma {
     fileName?: string | null
     fileSize?: number | null
     senderId: number
+    isRead?: boolean
     createdAt?: Date | string
   }
 
@@ -7890,6 +7923,7 @@ export namespace Prisma {
     fileSize?: IntNullableFilter<"Message"> | number | null
     senderId?: IntFilter<"Message"> | number
     receiverId?: IntFilter<"Message"> | number
+    isRead?: BoolFilter<"Message"> | boolean
     createdAt?: DateTimeFilter<"Message"> | Date | string
   }
 
@@ -8196,6 +8230,7 @@ export namespace Prisma {
     fileName?: string | null
     fileSize?: number | null
     receiverId: number
+    isRead?: boolean
     createdAt?: Date | string
   }
 
@@ -8206,6 +8241,7 @@ export namespace Prisma {
     fileName?: string | null
     fileSize?: number | null
     senderId: number
+    isRead?: boolean
     createdAt?: Date | string
   }
 
@@ -8264,6 +8300,7 @@ export namespace Prisma {
     fileUrl?: NullableStringFieldUpdateOperationsInput | string | null
     fileName?: NullableStringFieldUpdateOperationsInput | string | null
     fileSize?: NullableIntFieldUpdateOperationsInput | number | null
+    isRead?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     receiver?: UserUpdateOneRequiredWithoutReceivedMessagesNestedInput
   }
@@ -8275,6 +8312,7 @@ export namespace Prisma {
     fileName?: NullableStringFieldUpdateOperationsInput | string | null
     fileSize?: NullableIntFieldUpdateOperationsInput | number | null
     receiverId?: IntFieldUpdateOperationsInput | number
+    isRead?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -8285,6 +8323,7 @@ export namespace Prisma {
     fileName?: NullableStringFieldUpdateOperationsInput | string | null
     fileSize?: NullableIntFieldUpdateOperationsInput | number | null
     receiverId?: IntFieldUpdateOperationsInput | number
+    isRead?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -8293,6 +8332,7 @@ export namespace Prisma {
     fileUrl?: NullableStringFieldUpdateOperationsInput | string | null
     fileName?: NullableStringFieldUpdateOperationsInput | string | null
     fileSize?: NullableIntFieldUpdateOperationsInput | number | null
+    isRead?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     sender?: UserUpdateOneRequiredWithoutSentMessagesNestedInput
   }
@@ -8304,6 +8344,7 @@ export namespace Prisma {
     fileName?: NullableStringFieldUpdateOperationsInput | string | null
     fileSize?: NullableIntFieldUpdateOperationsInput | number | null
     senderId?: IntFieldUpdateOperationsInput | number
+    isRead?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -8314,6 +8355,7 @@ export namespace Prisma {
     fileName?: NullableStringFieldUpdateOperationsInput | string | null
     fileSize?: NullableIntFieldUpdateOperationsInput | number | null
     senderId?: IntFieldUpdateOperationsInput | number
+    isRead?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

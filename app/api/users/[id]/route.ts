@@ -69,7 +69,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     if (name) data.name = name;
     if (email) data.email = email;
     if (typeof isActive === "boolean") data.isActive = isActive;
-    if (role) data.role = role;
+    if (role) data.role = { connect: { name: role } };
     if (password) data.password = await bcrypt.hash(password, 10);
 
     // Update the user

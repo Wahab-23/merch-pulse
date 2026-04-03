@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { pusherClient } from "@/lib/pusher";
 import { Send, Paperclip, Loader2, FileIcon, Smile, BellRing, TrendingUp, User, Globe, MessageCircle } from "lucide-react";
 import { Button } from "./ui/button";
 import EmojiPicker, { Theme } from "emoji-picker-react";
+import { Badge } from "./ui/badge";
 
 export function ChatInterface({ users, currentUserId }: { users: any[], currentUserId: number }) {
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
@@ -14,7 +15,9 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
   const [loading, setLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
-  const [unreadCounts, setUnreadCounts] = useState<Record<number, number>>({});
+  
+  // Track conversation metadata (last message date and unread counts)
+  const [conversations, setConversations] = useState<any[]>([]);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const selectedUserRef = useRef(selectedUser);
@@ -35,12 +38,35 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
     }
   }, []);
 
+  // Fetch initial sorted conversations
+  const fetchConversations = async () => {
+    const storedToken = localStorage.getItem("token");
+    try {
+      const res = await fetch("/api/messages/conversations", {
+        headers: { Authorization: `Bearer ${storedToken}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setConversations(data);
+      }
+    } catch (err) {
+      console.error("Failed to load conversations", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchConversations();
+  }, []);
+
+  // Real-time listener for new messages
   useEffect(() => {
     const channelName = `chat-${currentUserId}`;
     const channel = pusherClient.subscribe(channelName);
 
     channel.bind("new-message", (newMsg: any) => {
       const activePartner = selectedUserRef.current;
+      
+      // 1. Update current message thread if open
       if (activePartner && (newMsg.senderId === activePartner.id || newMsg.senderId === currentUserId)) {
         setMessages((prev) => {
           if (!prev.find((m) => m.id === newMsg.id)) {
@@ -50,12 +76,11 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
         });
       }
 
-      if (newMsg.senderId !== currentUserId && (!activePartner || newMsg.senderId !== activePartner.id)) {
-        setUnreadCounts((prev) => ({
-          ...prev,
-          [newMsg.senderId]: (prev[newMsg.senderId] || 0) + 1
-        }));
+      // 2. Re-fetch conversations to update sorting and unread counts
+      fetchConversations();
 
+      // 3. Browser notification
+      if (newMsg.senderId !== currentUserId && (!activePartner || newMsg.senderId !== activePartner.id)) {
         if ("Notification" in window && Notification.permission === "granted") {
           const senderName = users.find(u => u.id === newMsg.senderId)?.name || "Someone";
           new Notification(`New message from ${senderName}`, {
@@ -71,10 +96,10 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
     };
   }, [currentUserId, users]);
 
+  // Handle user selection and mark as read
   useEffect(() => {
     if (!selectedUser) return;
     setLoading(true);
-    setUnreadCounts((prev) => ({ ...prev, [selectedUser.id]: 0 }));
 
     const fetchHistory = async () => {
       const storedToken = localStorage.getItem("token");
@@ -85,6 +110,9 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
         if (res.ok) {
           const data = await res.json();
           setMessages(data);
+          
+          // Re-fetch conversations to clear the unread count in the sidebar
+          fetchConversations();
         }
       } catch (err) {
         console.error("Failed to load history", err);
@@ -94,6 +122,25 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
     };
     fetchHistory();
   }, [selectedUser]);
+
+  // Compute the sorted user list
+  const sortedUsers = useMemo(() => {
+    // Start with all users
+    const allUsers = [...users];
+    
+    // Sort logic: 
+    // 1. If user has a conversation, use its lastMessage.createdAt
+    // 2. If no conversation, treat as oldest
+    return allUsers.sort((a, b) => {
+      const convA = conversations.find(c => c.user.id === a.id);
+      const convB = conversations.find(c => c.user.id === b.id);
+      
+      const timeA = convA ? new Date(convA.lastMessage.createdAt).getTime() : 0;
+      const timeB = convB ? new Date(convB.lastMessage.createdAt).getTime() : 0;
+      
+      return timeB - timeA;
+    });
+  }, [users, conversations]);
 
   const handleSend = async () => {
     if (!selectedUser || loading || isUploading) return;
@@ -155,6 +202,7 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
         setMessages((prev) => [...prev, data]);
         setInputVal("");
         setFile(null);
+        fetchConversations(); // Update sorting after sending
       }
     } catch (e) {
       console.error(e);
@@ -168,7 +216,7 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
   };
 
   return (
-    <div className="flex h-full bg-white overflow-hidden">
+    <div className="flex h-full bg-white overflow-hidden shadow-2xl rounded-3xl border border-slate-100 relative">
       {/* Background Subtle Glows */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-500/[0.02] rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-yellow-500/[0.02] rounded-full blur-[100px] pointer-events-none" />
@@ -177,43 +225,57 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
       <div className="w-80 border-r border-slate-100 bg-slate-50/10 backdrop-blur-xl flex flex-col z-10">
         <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white/50">
           <div className="flex items-center gap-3">
-            <div className="h-2 w-2 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.2)] animate-pulse" />
-            <span className="text-sm font-black tracking-[0.2em] uppercase text-slate-800">Operatives</span>
+            <div className="h-2.5 w-2.5 rounded-full bg-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.4)] animate-pulse" />
+            <span className="text-xs font-black tracking-[0.25em] uppercase text-slate-800">Operatives</span>
           </div>
-          {Object.values(unreadCounts).some(i => i > 0) && (
-            <div className="h-2 w-2 rounded-full bg-yellow-500 animate-ping" />
+          {conversations.some(c => c.unreadCount > 0) && (
+             <Badge variant="outline" className="bg-yellow-500 text-black border-none animate-bounce text-[9px] px-1.5 py-0.5">Live</Badge>
           )}
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-6 space-y-1 custom-scrollbar">
-          {users.map(u => {
-            const hasUnread = unreadCounts[u.id] > 0;
+          {sortedUsers.map(u => {
+            const conv = conversations.find(c => c.user.id === u.id);
+            const unreadCount = conv?.unreadCount || 0;
             const isSelected = selectedUser?.id === u.id;
+            const lastMsg = conv?.lastMessage;
+
             return (
               <div
                 key={u.id}
                 onClick={() => setSelectedUser(u)}
-                className={`group relative p-4 rounded-2xl cursor-pointer transition-all duration-300 flex items-center gap-4 ${isSelected ? "bg-white shadow-sm ring-1 ring-slate-200" : "hover:bg-slate-400/[0.02]"}`}
+                className={`group relative p-4 rounded-2xl cursor-pointer transition-all duration-300 flex items-center gap-4 ${isSelected ? "bg-white shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] ring-1 ring-slate-200" : "hover:bg-yellow-500/[0.03]"}`}
               >
                 <div className={`h-12 w-12 rounded-full flex items-center justify-center text-sm font-black transition-all border ${isSelected ? "bg-yellow-500 text-black border-yellow-400 shadow-lg shadow-yellow-500/10 scale-105" : "bg-white text-slate-400 border-slate-100"}`}>
                   {u.name[0]}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className={`text-sm tracking-tight truncate ${isSelected || hasUnread ? "text-slate-900 font-bold" : "text-slate-600 font-medium"}`}>
-                    {u.name}
+                  <div className="flex justify-between items-center mb-0.5">
+                    <div className={`text-sm tracking-tight truncate ${isSelected || unreadCount > 0 ? "text-slate-900 font-bold" : "text-slate-600 font-medium"}`}>
+                      {u.name}
+                    </div>
+                    {lastMsg && (
+                      <span className="text-[9px] text-slate-300 font-bold uppercase transition-colors group-hover:text-slate-400">
+                        {new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
                   </div>
-                  <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mt-0.5">
-                    {u.role?.name || "Member"}
+                  
+                  <div className="flex items-center justify-between gap-2">
+                    <div className={`text-[10px] truncate max-w-[120px] ${unreadCount > 0 ? "text-yellow-600 font-black" : "text-slate-400 font-bold"} uppercase tracking-widest`}>
+                      {unreadCount > 0 ? "Incoming Message" : (u.role?.name || "Member")}
+                    </div>
+                    {unreadCount > 0 && !isSelected && (
+                      <div className="min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-yellow-500 text-black text-[9px] font-black shadow-lg shadow-yellow-500/20">
+                        {unreadCount}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {hasUnread && !isSelected && (
-                  <div className="h-2 w-2 rounded-full bg-yellow-500" />
-                )}
-
                 {isSelected && (
-                  <div className="absolute left-0 w-1 h-6 bg-yellow-500 rounded-r-full shadow-[0_0_10px_rgba(234,179,8,0.2)]" />
+                  <div className="absolute left-[-1px] w-1.5 h-8 bg-yellow-500 rounded-r-full shadow-[4px_0_15px_rgba(234,179,8,0.4)]" />
                 )}
               </div>
             );
@@ -222,100 +284,119 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col bg-white/50 relative z-10 overflow-hidden">
+      <div className="flex-1 flex flex-col bg-white/80 backdrop-blur-sm relative z-10 overflow-hidden">
         {!selectedUser ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-300 gap-4 animate-in fade-in duration-500">
-            <div className="h-20 w-20 rounded-[2rem] bg-slate-50 flex items-center justify-center border border-slate-100">
-              <MessageCircle className="h-10 w-10 opacity-20" />
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-300 gap-6 animate-in fade-in duration-500 scale-95">
+            <div className="h-24 w-24 rounded-[2.5rem] bg-slate-50 flex items-center justify-center border border-slate-100 shadow-inner">
+              <MessageCircle className="h-12 w-12 opacity-10" />
             </div>
-            <p className="text-xs font-bold tracking-[0.3em] uppercase">Secure Channel Offline</p>
+            <div className="text-center">
+              <p className="text-[10px] font-black tracking-[0.4em] uppercase text-slate-400 mb-2">Secure Link Awaiting Connection</p>
+              <div className="h-1 w-24 bg-slate-100 rounded-full mx-auto overflow-hidden">
+                <div className="h-full w-1/3 bg-yellow-500 animate-loading-bar" />
+              </div>
+            </div>
           </div>
         ) : (
           <>
             <div className="h-24 px-8 flex items-center justify-between border-b border-slate-100 bg-white/90 backdrop-blur-md">
               <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full bg-yellow-500 flex items-center justify-center text-black font-black shadow-lg shadow-yellow-500/10">
-                  {selectedUser.name[0]}
+                <div className="h-12 w-12 rounded-2xl bg-yellow-500 flex items-center justify-center text-black font-black shadow-lg shadow-yellow-500/10 rotate-3 group">
+                  <span className="-rotate-3">{selectedUser.name[0]}</span>
                 </div>
                 <div>
-                  <h3 className="text-slate-900 font-black tracking-tight leading-none mb-1">{selectedUser.name}</h3>
-                  <div className="flex items-center gap-1.5">
-                    <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Link</span>
+                  <h3 className="text-slate-900 font-black tracking-tight text-lg mb-0.5">{selectedUser.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Biometric Linked</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar scroll-smooth bg-slate-50/[0.3]">
+            <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar scroll-smooth bg-slate-50/[0.2]">
               {loading && messages.length === 0 ? (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-10 w-10 border-2 border-yellow-500/10 border-t-yellow-500 rounded-full animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm z-50">
+                  <div className="h-12 w-12 border-4 border-yellow-500/10 border-t-yellow-500 rounded-full animate-spin shadow-[0_0_20px_rgba(234,179,8,0.1)]" />
                 </div>
               ) : (
-                messages.map(msg => (
-                  <div key={msg.id} className={`flex flex-col ${msg.senderId === currentUserId ? "items-end" : "items-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-                    <div className={`group relative max-w-[75%] p-4 shadow-xl shadow-slate-200/[0.15] transition-all ${msg.senderId === currentUserId
-                      ? "bg-yellow-400 text-black rounded-2xl rounded-tr-none"
-                      : "bg-white border border-slate-100 text-slate-800 rounded-2xl rounded-tl-none"
-                      }`}>
-                      {msg.content && <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">{msg.content}</p>}
+                messages.map((msg, idx) => {
+                   const isMe = msg.senderId === currentUserId;
+                   const nextMsg = messages[idx + 1];
+                   const isLastInGroup = !nextMsg || nextMsg.senderId !== msg.senderId;
 
-                      {msg.fileUrl && (
-                        <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center p-3 mt-3 rounded-xl transition-all border ${msg.senderId === currentUserId
-                          ? "bg-white/5 border-white/5 hover:bg-white/10 text-white"
-                          : "bg-slate-50 border-slate-100 hover:bg-slate-100 text-slate-800"
-                          }`}>
-                          <FileIcon className="h-4 w-4 mr-3 text-yellow-500" />
-                          <span className="text-xs truncate font-bold tracking-tight">{msg.fileName}</span>
-                        </a>
-                      )}
+                   return (
+                    <div key={msg.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"} animate-in fade-in slide-in-from-bottom-4 duration-300`}>
+                      <div className={`group relative max-w-[75%] p-5 shadow-2xl shadow-slate-200/[0.1] transition-all hover:scale-[1.01] ${isMe
+                        ? "bg-yellow-400 text-black rounded-3xl rounded-tr-none"
+                        : "bg-white border border-slate-100 text-slate-800 rounded-3xl rounded-tl-none"
+                        }`}>
+                        {msg.content && <p className="text-[15px] font-semibold leading-relaxed whitespace-pre-wrap tracking-tight">{msg.content}</p>}
 
-                      <div className={`text-[9px] mt-2 font-black uppercase tracking-widest opacity-30 ${msg.senderId === currentUserId ? "text-right" : "text-left"}`}>
-                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {msg.fileUrl && (
+                          <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center p-4 mt-4 rounded-2xl transition-all border ${isMe
+                            ? "bg-black/5 border-black/5 hover:bg-black/10 text-black"
+                            : "bg-slate-50 border-slate-100 hover:bg-slate-100 text-slate-800"
+                            }`}>
+                            <div className="h-10 w-10 rounded-xl bg-yellow-500 flex items-center justify-center shadow-lg shadow-yellow-500/10 mr-4">
+                                <FileIcon className="h-5 w-5 text-black" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[11px] font-black uppercase tracking-widest truncate">{msg.fileName}</p>
+                                <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">Payload File</p>
+                            </div>
+                          </a>
+                        )}
+
+                        <div className={`text-[10px] mt-3 font-black uppercase tracking-[0.2em] opacity-30 ${isMe ? "text-right" : "text-left"}`}>
+                          {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                   );
+                })
               )}
-              <div ref={bottomRef} className="h-4" />
+              <div ref={bottomRef} className="h-8" />
             </div>
 
             {/* Input Form */}
             <div className="p-8 relative bg-white border-t border-slate-100">
 
               {showEmoji && (
-                <div className="absolute bottom-[110px] left-8 overflow-hidden z-50 animate-in zoom-in-95 duration-200">
+                <div className="absolute bottom-[120px] left-8 overflow-hidden z-50 animate-in zoom-in-95 duration-200 shadow-2xl rounded-2xl border border-slate-100">
                   <EmojiPicker theme={Theme.LIGHT} onEmojiClick={handleEmojiClick} lazyLoadEmojis={true} />
                 </div>
               )}
 
               {file && (
-                <div className="absolute bottom-[110px] left-8 right-8 bg-white border border-yellow-500 p-3 rounded-2xl flex items-center justify-between shadow-2xl animate-in slide-in-from-bottom-4 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-                      <FileIcon className="h-4 w-4 text-yellow-500" />
+                <div className="absolute bottom-[120px] left-8 right-8 bg-white/90 backdrop-blur-xl border-2 border-yellow-500 p-4 rounded-3xl flex items-center justify-between shadow-2xl animate-in slide-in-from-bottom-6 transition-all border-dashed">
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-2xl bg-yellow-500 flex items-center justify-center shadow-lg shadow-yellow-500/20 rotate-6">
+                      <FileIcon className="h-6 w-6 text-black" />
                     </div>
-                    <span className="text-xs font-bold text-slate-800 truncate max-w-[300px]">{file.name}</span>
+                    <div>
+                        <p className="text-xs font-black text-slate-900 truncate max-w-[300px] uppercase tracking-widest">{file.name}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ready for uplink</p>
+                    </div>
                   </div>
-                  <button onClick={() => setFile(null)} className="text-red-500 text-[10px] font-black uppercase tracking-widest hover:text-red-700 transition-colors px-4">
-                    Delete
+                  <button onClick={() => setFile(null)} className="h-10 px-6 rounded-full bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all transform active:scale-95">
+                    Abort
                   </button>
                 </div>
               )}
 
-              <div className="relative group/input">
-                <div className="absolute inset-y-0 left-0 pl-6 flex items-center gap-2">
+              <div className="relative group/input max-w-5xl mx-auto">
+                <div className="absolute inset-y-0 left-0 pl-8 flex items-center gap-3">
                   <button
                     onClick={() => setShowEmoji(!showEmoji)}
-                    className={`p-2 rounded-xl transition-all ${showEmoji ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/20' : 'text-slate-300 hover:text-slate-600 hover:bg-slate-50'}`}
+                    className={`p-3 rounded-2xl transition-all ${showEmoji ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/20 rotate-12' : 'text-slate-300 hover:text-slate-900 hover:bg-slate-100'}`}
                     disabled={loading || isUploading}
                   >
-                    <Smile className="h-5 w-5" />
+                    <Smile className="h-6 w-6" />
                   </button>
-                  <label className="cursor-pointer p-2 rounded-xl transition-all text-slate-300 hover:text-slate-600 hover:bg-slate-50">
-                    <Paperclip className="h-5 w-5" />
+                  <label className="cursor-pointer p-3 rounded-2xl transition-all text-slate-300 hover:text-slate-900 hover:bg-slate-100 group">
+                    <Paperclip className="h-6 w-6 transition-transform group-hover:-rotate-12" />
                     <input
                       type="file"
                       className="hidden"
@@ -327,21 +408,21 @@ export function ChatInterface({ users, currentUserId }: { users: any[], currentU
 
                 <input
                   type="text"
-                  placeholder="Transmit message..."
-                  className="w-full bg-slate-50 border border-slate-100 py-5 pl-32 pr-24 rounded-full text-sm font-semibold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-4 focus:ring-yellow-500/10 focus:border-yellow-500/30 focus:bg-white transition-all shadow-inner"
+                  placeholder="Transmit encrypted payload..."
+                  className="w-full bg-slate-50/50 border-2 border-slate-100 py-6 pl-36 pr-28 rounded-full text-[15px] font-bold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-8 focus:ring-yellow-500/5 focus:border-yellow-500/20 focus:bg-white transition-all shadow-inner"
                   value={inputVal}
                   onChange={(e) => setInputVal(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSend()}
                   disabled={loading || isUploading}
                 />
 
-                <div className="absolute inset-y-0 right-2 flex items-center px-2">
+                <div className="absolute inset-y-0 right-3 flex items-center px-2">
                   <Button
                     onClick={handleSend}
-                    className="h-10 w-10 !p-0 rounded-full bg-yellow-500 text-black shadow-lg shadow-yellow-500/20 hover:bg-yellow-400 active:scale-95 transition-all"
+                    className="h-14 w-14 !p-0 rounded-full bg-yellow-500 text-black shadow-[0_10px_20px_-5px_rgba(234,179,8,0.4)] hover:bg-yellow-400 hover:-translate-y-0.5 active:scale-90 transition-all font-black group"
                     disabled={loading || isUploading || (!inputVal.trim() && !file)}
                   >
-                    {isUploading || loading ? <Loader2 className="h-4 w-4 animate-spin text-black" /> : <Send className="h-4 w-4 ml-0.5 text-black" />}
+                    {isUploading || loading ? <Loader2 className="h-6 w-6 animate-spin text-black" /> : <Send className="h-6 w-6 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />}
                   </Button>
                 </div>
               </div>

@@ -29,6 +29,17 @@ export default function LoginPage() {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
         document.cookie = `token=${data.token}; path=/`;
+        
+        // Explicit role-based redirection
+        const userRole = data.user.role.name;
+        if (userRole === "Admin") {
+          router.push("/admin");
+        } else if (userRole === "Merchandiser") {
+          router.push("/merchandiser");
+        } else {
+          router.push("/");
+        }
+        
         router.refresh();
       } else {
         setError(data.message || "Invalid credentials. Please try again.");

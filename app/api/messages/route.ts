@@ -23,6 +23,16 @@ export async function GET(req: NextRequest) {
 
     const receiverId = parseInt(receiverIdParam, 10);
 
+    // 🧩 Mark all messages received by the current user from this sender as "read"
+    await prisma.message.updateMany({
+      where: {
+        receiverId: user.id,
+        senderId: receiverId,
+        isRead: false,
+      },
+      data: { isRead: true },
+    });
+
     // Find all messages between these two users (sent OR received by either)
     const messages = await prisma.message.findMany({
       where: {
