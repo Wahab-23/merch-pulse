@@ -173,14 +173,30 @@ exports.Prisma.SortOrder = {
   desc: 'desc'
 };
 
-exports.Prisma.QueryMode = {
-  default: 'default',
-  insensitive: 'insensitive'
-};
-
 exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
+};
+
+exports.Prisma.UserOrderByRelevanceFieldEnum = {
+  name: 'name',
+  email: 'email',
+  password: 'password'
+};
+
+exports.Prisma.RoleOrderByRelevanceFieldEnum = {
+  name: 'name'
+};
+
+exports.Prisma.RecordOrderByRelevanceFieldEnum = {
+  comments: 'comments',
+  attachmentUrl: 'attachmentUrl'
+};
+
+exports.Prisma.MessageOrderByRelevanceFieldEnum = {
+  content: 'content',
+  fileUrl: 'fileUrl',
+  fileName: 'fileName'
 };
 
 

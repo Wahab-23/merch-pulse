@@ -1,13 +1,9 @@
 import { PrismaClient } from "../app/generated/client";
-import { Pool } from "pg";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL!,
-});
-const adapter = new PrismaPg(pool);
+const adapter = new PrismaMariaDb(process.env.DATABASE_URL!);
 
 export const prisma =
   globalForPrisma.prisma ||

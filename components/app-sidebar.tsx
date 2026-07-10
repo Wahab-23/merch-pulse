@@ -120,46 +120,38 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar
       {...props}
-      className="border-r-0"
-      style={{
-        "--sidebar": "#414148ff",
-        "--sidebar-foreground": "#f8fafc",
-        "--sidebar-accent": "#18181b",
-        "--sidebar-accent-foreground": "#facc15",
-        "--sidebar-border": "rgba(255,255,255,0.05)",
-        "--sidebar-ring": "#facc15"
-      } as React.CSSProperties}
+      className="border-r border-sidebar-border/50 bg-sidebar"
     >
-      <SidebarHeader className="border-b border-white/5 py-5 px-4">
-        <div className="flex items-center gap-3 transition-all duration-300">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.2)]">
-            <TrendingUp className="h-5 w-5 text-black" />
+      <SidebarHeader className="py-6 px-5">
+        <div className="flex items-center gap-2.5 transition-all duration-300">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <TrendingUp className="h-4 w-4" />
           </div>
-          <span className="text-xl font-black tracking-tight text-white">
-            Merch<span className="text-yellow-500">Pulse</span>
+          <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
+            Merch<span className="text-primary">Pulse</span>
           </span>
         </div>
       </SidebarHeader>
-      <SidebarContent className="gap-2 px-3 pt-6">
+
+      <SidebarContent className="gap-0 px-2 pt-2">
         {navData.map((group) => (
           <Collapsible key={group.title} className="group/collapsible" defaultOpen>
-            <SidebarGroup className="p-0 mb-4">
+            <SidebarGroup className="p-0 mb-2">
               <SidebarGroupLabel
                 asChild
-                className="h-9 px-3 text-slate-500/80 hover:text-white transition-colors duration-200"
+                className="h-8 px-3 text-sidebar-foreground/40 hover:text-sidebar-foreground/70 transition-colors duration-200"
               >
                 <CollapsibleTrigger>
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-yellow-500/60 group-hover/collapsible:text-yellow-500 transition-colors">{group.icon}</span>
-                    <span className="font-bold tracking-widest uppercase text-[10px]">{group.title}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold tracking-wider uppercase text-[9px]">{group.title}</span>
                   </div>
-                  <ChevronRight className="ml-auto h-3.5 w-3.5 transition-transform duration-300 group-data-[state=open]/collapsible:rotate-90 opacity-40" />
+                  <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-300 group-data-[state=open]/collapsible:rotate-90 opacity-20" />
                 </CollapsibleTrigger>
               </SidebarGroupLabel>
 
-              <CollapsibleContent className="pt-1.5 ml-3 border-l border-white/5">
+              <CollapsibleContent className="pt-1 px-1">
                 <SidebarGroupContent>
-                  <SidebarMenu className="gap-1">
+                  <SidebarMenu className="gap-0.5">
                     {group.items.map((item) => (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton
@@ -168,11 +160,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             router.push(item.url)
                             router.refresh()
                           }}
-                          className="w-full text-slate-400 hover:text-yellow-400 hover:bg-white/[0.03] transition-all duration-200 rounded-lg group/item"
+                          className="w-full text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-all duration-200 rounded-md group/item px-3"
                         >
-                          <a className="flex items-center p-2.5 pl-4 relative">
-                            <span className="text-[13px] font-medium leading-none">{item.title}</span>
-                            <div className="absolute right-2 w-1 h-1 rounded-full bg-yellow-500 opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                          <a className="flex items-center gap-3 py-2">
+                            <span className="shrink-0 text-sidebar-foreground/40 group-hover/item:text-primary transition-colors">
+                              {group.icon}
+                            </span>
+                            <span className="text-[13px] font-medium">{item.title}</span>
                           </a>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -184,25 +178,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </Collapsible>
         ))}
       </SidebarContent>
-      <div className="mt-auto p-4 border-t border-white/5 bg-black/40">
-        <div className="flex items-center gap-3 p-3 mb-4 rounded-xl bg-white/[0.03] border border-white/5 ring-1 ring-white/[0.02]">
-          <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-yellow-400 to-yellow-600 flex items-center justify-center text-sm font-bold text-black border border-white/10 shadow-lg shadow-black/20">
+
+      <div className="mt-auto p-4 flex flex-col gap-2">
+        <div className="flex items-center gap-3 p-2 rounded-lg bg-sidebar-accent/30 border border-sidebar-border/20">
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
             {userName?.[0] || 'U'}
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-sm font-bold text-white truncate leading-none mb-1">{userName || "User"}</span>
-            <span className="text-[10px] text-slate-500 font-medium tracking-tight">MerchPulse Internal</span>
+            <span className="text-[13px] font-semibold text-sidebar-foreground truncate leading-tight">{userName || "User"}</span>
+            <span className="text-[10px] text-sidebar-foreground/50 font-medium">Internal Panel</span>
           </div>
         </div>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-red-400 hover:bg-red-500/10 active:scale-[0.98] transition-all duration-200 rounded-xl text-xs font-bold group border border-transparent hover:border-red-500/20"
+          className="w-full flex items-center gap-2 px-3 py-2 text-sidebar-foreground/60 hover:text-destructive hover:bg-destructive/5 active:scale-[0.98] transition-all duration-200 rounded-lg text-xs font-medium group"
         >
-          <LogOut className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-          Sign out session
+          <LogOut className="h-3.5 w-3.5" />
+          <span>Sign out</span>
         </button>
       </div>
-      <SidebarRail className="hover:after:bg-yellow-500/50" />
+      <SidebarRail />
     </Sidebar>
   )
 }
